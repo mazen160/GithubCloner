@@ -22,6 +22,7 @@ import threading
 import argparse
 import requests
 import git
+import queue
 
 
 class getReposURLs():
@@ -139,7 +140,8 @@ def cloneRepo(URL, cloningpath):
         repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
         repopath = repopath.rstrip(".git")
         fullpath = cloningpath + "/" + repopath
-        print(fullpath)
+        with threading.Lock():
+            print(fullpath)
         git.Repo.clone_from(URL, fullpath)
     except Exception as e:
         print("Error: There was an error in cloning [{}]".format(URL))
@@ -158,15 +160,19 @@ def cloneBulkRepos(URLs, cloningPath, threads_limit=5):
             * threads_limit: The limit of threads.
             ** Type: integer
     """
-
+    Q = queue.Queue()
+    threads_state = []
     for URL in URLs:
-        is_assigned = False
-        while is_assigned is False:
+        Q.put(URL)
+        while Q.empty() is False:
             if (threading.active_count() < (threads_limit + 1)):
-                threading.Thread(target=cloneRepo, args=(URL, cloningPath,), daemon=True).start()
-                is_assigned = True
-            else:
-                time.sleep(1)
+                t = threading.Thread(target=cloneRepo, args=(Q.get(), cloningPath,))
+                t.daemon = True
+                t.start()
+
+                threads_state.append(t)
+        for _ in threads_state:
+            _.join()
 
 
 def main():
