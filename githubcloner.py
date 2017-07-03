@@ -6,7 +6,7 @@
 #   A script that clones public Github repositories
 #   of users and organizations automatically.
 # * Version:
-#   v0.2
+#   v0.3
 # * Homepage:
 #   https://github.com/mazen160/GithubCloner
 # * Author:
@@ -14,33 +14,85 @@
 # *******************************************************************
 
 # Modules
-import sys
-import os
-import time
-import json
-import threading
 import argparse
-import requests
 import git
+import json
+import os
 import queue
+import requests
+import threading
+import time
 
 
-class getReposURLs():
+class getReposURLs(object):
     def __init__(self):
         self.user_agent = "GithubCloner (https://github.com/mazen160/GithubCloner)"
         self.headers = {'User-Agent': self.user_agent, 'Accept': '*/*'}
         self.timeout = 3
 
-    def fromUser(self, user, username=None, token=None):
+    def UserGists(self, user, username=None, token=None):
         """
-        Retrieve a list of repositories for a Github user.
-        Parameters:
-            Required:
-                * user: The Github username.
-                ** Type: string
-        Output:
-              * a list of Github repositories URLs.
+        Returns a list of GIT URLs for accessible gists.
+        Input:-
+        user: Github user.
+        Optional Input:-
+        username: Github username.
+        token: Github token or password.
+        Output:-
+        a list of Github gist repositories URLs.
         """
+
+        URLs = []
+        API = "https://api.github.com/users/{}/gists".format(user)
+        if (username or token) is None:
+            resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
+        else:
+            resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+        resp = json.loads(resp)
+
+        try:
+            if (resp["message"] == "Not Found"):
+                return([])  # The organization does not exist. Returning an empty list.
+        except TypeError:
+            pass
+
+        for i in range(len(resp)):
+            URLs.append(resp[i]["git_pull_url"])
+
+        return(URLs)
+
+    def AuthenticatedGists(self, username, token):
+        """
+        Returns a list of gists of an authenticated user.
+        Input:-
+        username: Github username.
+        token: Github token or password.
+        Output:-
+        a list of Github gist repositories URLs.
+        """
+
+        URLs = []
+        API = "https://api.github.com/gists"
+
+        resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+        resp = json.loads(resp)
+
+        for i in range(len(resp)):
+            URLs.append(resp[i]["git_pull_url"])
+        return(URLs)
+
+    def fromUser(self, user, username=None, token=None, include_gists=False):
+        """
+        Retrieves a list of repositories for a Github user.
+        Input:-
+        user: Github username.
+        Optional Input:-
+        username: Github username.
+        token: Github token or password.
+        Output:-
+        a list of Github repositories URLs.
+        """
+
         URLs = []
 
         API = "https://api.github.com/users/{}/repos?per_page=40000000".format(user)
@@ -59,18 +111,22 @@ class getReposURLs():
         for i in range(len(resp)):
             URLs.append(resp[i]["git_url"])
 
+        if include_gists is True:
+            URLs.extend(self.UserGists(user, username=username, token=token))
         return(URLs)
 
     def fromOrg(self, org_name, username=None, token=None):
         """
-        Retrieve a list of repositories for a Github organization.
-        Parameters:
-            Required:
-                * org_name: The Github organization name.
-                ** Type: string
-        Output:
-              * a list of Github repositories URLs.
+        Retrieves a list of repositories for a Github organization.
+        Input:-
+        org_name: Github organization name.
+        Optional Input:-
+        username: Github username.
+        token: Github token or password.
+        Output:-
+        a list of Github repositories URLs.
         """
+
         URLs = []
         API = "https://api.github.com/orgs/{}/repos?per_page=40000000".format(org_name)
         if (username or token) is None:
@@ -90,16 +146,17 @@ class getReposURLs():
 
         return(URLs)
 
-    def fromOrgIncludeUsers(self, org_name, username=None, token=None):
+    def fromOrgIncludeUsers(self, org_name, username=None, token=None, include_gists=False):
         """
-        Retrieve a list of repositories for a Github organization
+        Retrieves a list of repositories for a Github organization
         and repositories of the Github organization's members.
-        Parameters:
-            Required:
-                * org_name: The Github organization name.
-                ** Type: string
-        Output:
-              * a list of Github repositories URLs.
+        Input:-
+        org_name: Github organization name.
+        Optional Input:-
+        username: Github username.
+        token: Github token or password.
+        Output:-
+        a list of Github repositories URLs.
         """
 
         URLs = []
@@ -124,11 +181,21 @@ class getReposURLs():
             members.append(resp[i]["login"])
 
         for member in members:
-            URLs.extend(self.fromUser(member, username=username, token=token))
+            URLs.extend(self.fromUser(member, username=username, token=token, include_gists=include_gists))
 
         return(URLs)
 
     def checkAuthencation(self, username, token):
+        """
+        Checks whether an authentication credentials are valid or not.
+        Input:-
+        username: Github username.
+        token: Github token or password.
+        Output:-
+        True: if the authentication credentials are valid.
+        False: if the authentication credentials are invalid.
+        """
+
         API = "https://api.github.com/user"
         resp = requests.get(API, auth=(username, token), timeout=self.timeout, headers=self.headers)
         if resp.status_code == 200:
@@ -137,6 +204,15 @@ class getReposURLs():
             return(False)
 
     def fromAuthenticatedUser(self, username, token):
+        """
+        Retrieves a list of Github repositories than an authenticated user
+        has access to.
+        Input:-
+        username: Github username.
+        token: Github token or password.
+        Output:-
+        a list of Github repositories URLs.
+        """
         URLs = []
         API = "https://api.github.com/user/repos?per_page=40000000&type=all"
         resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
@@ -151,46 +227,47 @@ class getReposURLs():
 def cloneRepo(URL, cloningpath, username=None, token=None):
     """
     Clones a single GIT repository.
-    Parameters:
-        Required:
-            * URL: GIT repository URL.
-            ** Type: string
-            * cloningPath: the directory that the repository will be cloned at.
-            ** Type: string
+    Input:-
+    URL: GIT repository URL.
+    cloningPath: the directory that the repository will be cloned at.
+    Optional Input:-
+    username: Github username.
+    token: Github token or password.
     """
 
     try:
         try:
             if not os.path.exists(cloningpath):
                 os.mkdir(cloningpath)
-        except:
+        except Exception:
             pass
         URL = URL.replace("git://", "https://")
         if (username or token) is not None:
             URL = URL.replace("https://", "https://{}:{}@".format(username, token))
         repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
         repopath = repopath.rstrip(".git")
+        if '@' in repopath:
+            repopath = repopath.replace(repopath[:repopath.index("@") + 1], "")
         fullpath = cloningpath + "/" + repopath
         with threading.Lock():
             print(fullpath)
         git.Repo.clone_from(URL, fullpath)
-    except Exception as e:
+    except Exception:
         print("Error: There was an error in cloning [{}]".format(URL))
 
 
 def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None):
     """
-    Clones a bulk of GIT repositories
-    Parameters:
-        Required:
-            * URLs: A list of GIT repository URLs.
-            ** Type: list
-            * cloningPath: the directory that the repository will be cloned at.
-            ** Type: string
-        Optional:
-            * threads_limit: The limit of threads.
-            ** Type: integer
+    Clones a bulk of GIT repositories.
+    Input:-
+    URLs: A list of GIT repository URLs.
+    cloningPath: the directory that the repository will be cloned at.
+    Optional Input:-
+    threads_limit: The limit of working threads.
+    username: Github username.
+    token: Github token or password.
     """
+
     Q = queue.Queue()
     threads_state = []
     for URL in URLs:
@@ -209,6 +286,9 @@ def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None
 
 
 def main():
+    """
+    The main function.
+    """
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--user",
@@ -242,6 +322,10 @@ def main():
                         help="Include repositories that the authenticated Github" +
                              " account have access to.",
                         action='store_true')
+    parser.add_argument("--include-gists",
+                        dest="include_gists",
+                        help="Include gists.",
+                        action='store_true')
     args = parser.parse_args()
 
     users = args.users if args.users else None
@@ -251,6 +335,12 @@ def main():
     threads_limit = int(args.threads_limit) if args.threads_limit else 5
     authentication = args.authentication if args.authentication else None
     include_authenticated_repos = args.include_authenticated_repos if args.include_authenticated_repos else False
+    include_gists = args.include_gists if args.include_gists else False
+
+    if threads_limit > 10:
+        print("Error: Using more than 10 threads may cause errors.\nDecrease the amount of used threads.")
+        print("\nExiting....")
+        exit(1)
 
     if not args.output_path:
         print("Error: The output path is not specified.")
@@ -291,11 +381,12 @@ def main():
 
     if include_authenticated_repos is True:
         URLs.extend(getReposURLs().fromAuthenticatedUser(username, token))
+        URLs.extend(getReposURLs().AuthenticatedGists(username, token))
 
     if users is not None:
         users = users.replace(" ", "").split(",")
         for user in users:
-            URLs.extend(getReposURLs().fromUser(user, username=username, token=token))
+            URLs.extend(getReposURLs().fromUser(user, username=username, token=token, include_gists=include_gists))
 
     if organizations is not None:
         organizations = organizations.replace(" ", "").split(",")
@@ -304,7 +395,7 @@ def main():
             if include_organization_members is False:
                 URLs.extend(getReposURLs().fromOrg(organization, username=username, token=token))
             else:
-                URLs.extend(getReposURLs().fromOrgIncludeUsers(organization, username=username, token=token))
+                URLs.extend(getReposURLs().fromOrgIncludeUsers(organization, username=username, token=token, include_gists=include_gists))
 
     URLs = list(set(URLs))
 

@@ -17,6 +17,7 @@ GithubCloner
 | Clone all repositories of an organization, along with all repositories of the organization's members.       | `./githubcloner.py --org organization --include-org-members -o /tmp/output` |
 | Use Github authentication in the task.                    | `./githubcloner.py --org organization -o /tmp/output --authentication user:token`|
 | Clone authenticated repositories that the authenticated user has access to. | `./githubcloner.py -o /tmp/output --authentication user:token --include-authenticated-repos`|
+| Include gists.                                          | `./githubcloner.py --user user -o /tmp/output --include-gists`              |
 
 
 # Compatibility #
