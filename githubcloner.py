@@ -23,7 +23,6 @@ import requests
 import threading
 import time
 
-
 class getReposURLs(object):
     def __init__(self):
         self.user_agent = "GithubCloner (https://github.com/mazen160/GithubCloner)"
@@ -251,7 +250,11 @@ def cloneRepo(URL, cloningpath, username=None, token=None):
         fullpath = cloningpath + "/" + repopath
         with threading.Lock():
             print(fullpath)
-        git.Repo.clone_from(URL, fullpath)
+
+        if os.path.exists(fullpath):
+            git.Repo(fullpath).remote().pull()
+        else:
+            git.Repo.clone_from(URL, fullpath)
     except Exception:
         print("Error: There was an error in cloning [{}]".format(URL))
 
