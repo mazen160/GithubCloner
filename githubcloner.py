@@ -42,22 +42,25 @@ class getReposURLs(object):
         """
 
         URLs = []
-        API = "https://api.github.com/users/{}/gists".format(user)
-        if (username or token) is None:
-            resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
-        else:
-            resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
-        resp = json.loads(resp)
+        resp = []
+        current_page = 1
+        while (len(resp) != 0 or current_page == 1):
+            API = "https://api.github.com/users/{0}/gists?page={1}".format(user, current_page)
+            if (username or token) is None:
+                resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
+            else:
+                resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+            resp = json.loads(resp)
 
-        try:
-            if (resp["message"] == "Not Found"):
-                return([])  # The organization does not exist. Returning an empty list.
-        except TypeError:
-            pass
+            try:
+                if (resp["message"] == "Not Found"):
+                    return([])  # The organization does not exist. Returning an empty list.
+            except TypeError:
+                pass
 
-        for i in range(len(resp)):
-            URLs.append(resp[i]["git_pull_url"])
-
+            for i in range(len(resp)):
+                URLs.append(resp[i]["git_pull_url"])
+            current_page += 1
         return(URLs)
 
     def AuthenticatedGists(self, username, token):
@@ -71,13 +74,16 @@ class getReposURLs(object):
         """
 
         URLs = []
-        API = "https://api.github.com/gists"
+        resp = []
+        current_page = 1
+        while (len(resp) != 0 or current_page == 1):
+            API = "https://api.github.com/gists?page={0}".format(current_page)
+            resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+            resp = json.loads(resp)
+            for i in range(len(resp)):
+                URLs.append(resp[i]["git_pull_url"])
+            current_page += 1
 
-        resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
-        resp = json.loads(resp)
-
-        for i in range(len(resp)):
-            URLs.append(resp[i]["git_pull_url"])
         return(URLs)
 
     def fromUser(self, user, username=None, token=None, include_gists=False):
@@ -93,25 +99,29 @@ class getReposURLs(object):
         """
 
         URLs = []
+        resp = []
+        current_page = 1
+        while (len(resp) != 0 or current_page == 1):
+            API = "https://api.github.com/users/{0}/repos?per_page=40000000&page={1}".format(user, current_page)
 
-        API = "https://api.github.com/users/{}/repos?per_page=40000000".format(user)
-        if (username or token) is None:
-            resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
-        else:
-            resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
-        resp = json.loads(resp)
+            if (username or token) is None:
+                resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
+            else:
+                resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+            resp = json.loads(resp)
 
-        try:
-            if (resp["message"] == "Not Found"):
-                return([])  # The user does not exist. Returning an empty list.
-        except TypeError:
-            pass
+            try:
+                if (resp["message"] == "Not Found"):
+                    return([])  # The user does not exist. Returning an empty list.
+            except TypeError:
+                pass
 
-        for i in range(len(resp)):
-            URLs.append(resp[i]["git_url"])
+            for i in range(len(resp)):
+                URLs.append(resp[i]["git_url"])
 
-        if include_gists is True:
-            URLs.extend(self.UserGists(user, username=username, token=token))
+            if include_gists is True:
+                URLs.extend(self.UserGists(user, username=username, token=token))
+            current_page += 1
         return(URLs)
 
     def fromOrg(self, org_name, username=None, token=None):
@@ -127,22 +137,25 @@ class getReposURLs(object):
         """
 
         URLs = []
-        API = "https://api.github.com/orgs/{}/repos?per_page=40000000".format(org_name)
-        if (username or token) is None:
-            resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
-        else:
-            resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
-        resp = json.loads(resp)
+        resp = []
+        current_page = 1
+        while (len(resp) != 0 or current_page == 1):
+            API = "https://api.github.com/orgs/{0}/repos?per_page=40000000&page={1}".format(org_name, current_page)
+            if (username or token) is None:
+                resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
+            else:
+                resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+            resp = json.loads(resp)
 
-        try:
-            if (resp["message"] == "Not Found"):
-                return([])  # The organization does not exist. Returning an empty list.
-        except TypeError:
-            pass
+            try:
+                if (resp["message"] == "Not Found"):
+                    return([])  # The organization does not exist. Returning an empty list.
+            except TypeError:
+                pass
 
-        for i in range(len(resp)):
-            URLs.append(resp[i]["git_url"])
-
+            for i in range(len(resp)):
+                URLs.append(resp[i]["git_url"])
+            current_page += 1
         return(URLs)
 
     def fromOrgIncludeUsers(self, org_name, username=None, token=None, include_gists=False):
@@ -160,24 +173,26 @@ class getReposURLs(object):
 
         URLs = []
         members = []
-
+        resp = []
+        current_page = 1
         URLs.extend(self.fromOrg(org_name, username=username, token=token))
 
-        API = "https://api.github.com/orgs/{}/members?per_page=40000000".format(org_name)
-        if (username or token) is None:
-            resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
-        else:
-            resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
-        resp = json.loads(resp)
+        while (len(resp) != 0 or current_page == 1):
+            API = "https://api.github.com/orgs/{0}/members?per_page=40000000&page={1}".format(org_name, current_page)
+            if (username or token) is None:
+                resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
+            else:
+                resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+            resp = json.loads(resp)
 
-        try:
-            if (resp["message"] == "Not Found"):
-                return([])  # The organization does not exist. Returning an empty list.
-        except TypeError:
-            pass
-
-        for i in range(len(resp)):
-            members.append(resp[i]["login"])
+            try:
+                if (resp["message"] == "Not Found"):
+                    return([])  # The organization does not exist. Returning an empty list.
+            except TypeError:
+                pass
+            current_page += 1
+            for i in range(len(resp)):
+                members.append(resp[i]["login"])
 
         for member in members:
             URLs.extend(self.fromUser(member, username=username, token=token, include_gists=include_gists))
@@ -213,13 +228,17 @@ class getReposURLs(object):
         a list of Github repositories URLs.
         """
         URLs = []
-        API = "https://api.github.com/user/repos?per_page=40000000&type=all"
-        resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
-        resp = json.loads(resp)
+        resp = []
+        current_page = 1
 
-        for i in range(len(resp)):
-            URLs.append(resp[i]["git_url"])
+        while (len(resp) != 0 or current_page == 1):
+            API = "https://api.github.com/user/repos?per_page=40000000&type=all&page={}".format(current_page)
+            resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+            resp = json.loads(resp)
 
+            for i in range(len(resp)):
+                URLs.append(resp[i]["git_url"])
+            current_page += 1
         return(URLs)
 
 
