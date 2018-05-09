@@ -23,6 +23,7 @@ import requests
 import threading
 import time
 
+
 class getReposURLs(object):
     def __init__(self):
         self.user_agent = "GithubCloner (https://github.com/mazen160/GithubCloner)"
@@ -383,6 +384,10 @@ def main():
         os.mkdir(output_path)
 
     if authentication is not None:
+        if ':' not in authentication:
+            print('[!] Error: Incorrect authentication value, must be: <username>:<password_or_personal_access_token>')
+            print('\nExiting...')
+            exit(1)
         if getReposURLs().checkAuthencation(authentication.split(":")[0], authentication.split(":")[1]) is False:
             print("Error: authentication failed.")
             print("\nExiting...")
