@@ -383,12 +383,11 @@ def main():
     if not os.path.exists(output_path):
         os.mkdir(output_path)
 
-    if ':' not in authentication:
-        print('Incorrect authentication value, must be: <username>:<personal_access_token>')
-        print('\nExiting...')
-        exit(1)
-
     if authentication is not None:
+        if ':' not in authentication:
+            print('[!] Error: Incorrect authentication value, must be: <username>:<password_or_personal_access_token>')
+            print('\nExiting...')
+            exit(1)
         if getReposURLs().checkAuthencation(authentication.split(":")[0], authentication.split(":")[1]) is False:
             print("Error: authentication failed.")
             print("\nExiting...")
