@@ -264,7 +264,8 @@ def cloneRepo(URL, cloningpath, username=None, token=None):
         if (username or token) is not None:
             URL = URL.replace("https://", "https://{}:{}@".format(username, token))
         repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
-        repopath = repopath.rstrip(".git")
+        if repopath.endswith(".git"):
+            repopath = repopath[:-4]
         if '@' in repopath:
             repopath = repopath.replace(repopath[:repopath.index("@") + 1], "")
         fullpath = cloningpath + "/" + repopath
