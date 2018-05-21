@@ -52,12 +52,9 @@ class getReposURLs(object):
             else:
                 resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
             resp = json.loads(resp)
-
-            try:
-                if (resp["message"] == "Not Found"):
-                    return([])  # The organization does not exist. Returning an empty list.
-            except TypeError:
-                pass
+            
+            if self.checkResponse(resp) != 0:
+                return([])
 
             for i in range(len(resp)):
                 URLs.append(resp[i]["git_pull_url"])
@@ -110,12 +107,9 @@ class getReposURLs(object):
             else:
                 resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
             resp = json.loads(resp)
-
-            try:
-                if (resp["message"] == "Not Found"):
-                    return([])  # The user does not exist. Returning an empty list.
-            except TypeError:
-                pass
+            
+            if self.checkResponse(resp) != 0:
+                return([])
 
             for i in range(len(resp)):
                 URLs.append(resp[i]["git_url"])
@@ -148,11 +142,8 @@ class getReposURLs(object):
                 resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
             resp = json.loads(resp)
 
-            try:
-                if (resp["message"] == "Not Found"):
-                    return([])  # The organization does not exist. Returning an empty list.
-            except TypeError:
-                pass
+            if self.checkResponse(resp) != 0:
+                return([])
 
             for i in range(len(resp)):
                 URLs.append(resp[i]["git_url"])
@@ -186,11 +177,9 @@ class getReposURLs(object):
                 resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
             resp = json.loads(resp)
 
-            try:
-                if (resp["message"] == "Not Found"):
-                    return([])  # The organization does not exist. Returning an empty list.
-            except TypeError:
-                pass
+            if self.checkResponse(resp) != 0:
+                return([])
+
             current_page += 1
             for i in range(len(resp)):
                 members.append(resp[i]["login"])
@@ -217,6 +206,25 @@ class getReposURLs(object):
             return(True)
         else:
             return(False)
+    
+    def checkResponse(self, response):
+        """
+        Validates whether there an error in the response.
+        """
+        try:
+            if "API rate limit exceeded" in response["message"]:
+                print('[!] Error: Github API rate limit exceeded')
+                return(1)
+        except TypeError:
+            pass
+
+        try:
+            if (response["message"] == "Not Found"):
+                return(2)  # The organization does not exist
+        except TypeError:
+            pass
+
+        return(0)
 
     def fromAuthenticatedUser(self, username, token):
         """
