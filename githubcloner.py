@@ -145,6 +145,14 @@ class getReposURLs(object):
             if self.checkResponse(resp) != 0:
                 return([])
 
+            try:
+                if "API rate limit exceeded" in resp["message"]:
+                    print('[!] Error: Github API rate limit exceeded')
+                    print('\nExiting...')
+                    exit(1)
+            except TypeError:
+                pass
+
             for i in range(len(resp)):
                 URLs.append(resp[i]["git_url"])
             current_page += 1
