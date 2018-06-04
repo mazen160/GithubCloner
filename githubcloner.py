@@ -52,7 +52,7 @@ class getReposURLs(object):
             else:
                 resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
             resp = json.loads(resp)
-            
+
             if self.checkResponse(resp) != 0:
                 return([])
 
@@ -107,7 +107,7 @@ class getReposURLs(object):
             else:
                 resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
             resp = json.loads(resp)
-            
+
             if self.checkResponse(resp) != 0:
                 return([])
 
@@ -206,7 +206,7 @@ class getReposURLs(object):
             return(True)
         else:
             return(False)
-    
+
     def checkResponse(self, response):
         """
         Validates whether there an error in the response.
@@ -417,7 +417,8 @@ def main():
 
     if include_authenticated_repos is True:
         URLs.extend(getReposURLs().fromAuthenticatedUser(username, token))
-        URLs.extend(getReposURLs().AuthenticatedGists(username, token))
+        if include_gists is True:
+            URLs.extend(getReposURLs().AuthenticatedGists(username, token))
 
     if users is not None:
         users = users.replace(" ", "").split(",")
