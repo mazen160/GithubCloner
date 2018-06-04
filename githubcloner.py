@@ -23,6 +23,11 @@ import requests
 import threading
 import time
 
+import logging
+
+log = logging.getLogger()
+log.setLevel(level=os.environ.get("LOGLEVEL", "INFO"))
+logging.basicConfig(format='%(filename)s:%(lineno)d %(levelname)s: %(message)s')
 
 class getReposURLs(object):
     def __init__(self):
@@ -41,24 +46,35 @@ class getReposURLs(object):
         Output:-
         a list of Github gist repositories URLs.
         """
+        log.debug("UserGists is beginning")
 
         URLs = []
         resp = []
         current_page = 1
         while (len(resp) != 0 or current_page == 1):
             API = "https://api.github.com/users/{0}/gists?page={1}".format(user, current_page)
+            log.debug("API is {}".format(API))
             if (username or token) is None:
-                resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
+                r = requests.get(API, headers=self.headers, timeout=self.timeout)
+                log.debug("UserGists response with username or token is: {}".format(r))
+                resp = r.text
+
             else:
-                resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+                r = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token))
+                log.debug("UserGists response is: {}".format(r))
+                resp = r.text
+
             resp = json.loads(resp)
-            
+
             if self.checkResponse(resp) != 0:
                 return([])
 
             for i in range(len(resp)):
                 URLs.append(resp[i]["git_pull_url"])
             current_page += 1
+        log.debug("UserGists is returning URLs with length: {}".format(len(URLs)))
+        for url in URLs:
+            log.debug('UserGists URLs contains: {}'.format(url))
         return(URLs)
 
     def AuthenticatedGists(self, username, token):
@@ -70,18 +86,22 @@ class getReposURLs(object):
         Output:-
         a list of Github gist repositories URLs.
         """
+        log.debug("AuthenticatedGists is beginning")
 
         URLs = []
         resp = []
         current_page = 1
         while (len(resp) != 0 or current_page == 1):
             API = "https://api.github.com/gists?page={0}".format(current_page)
-            resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+            r = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token))
+            resp = r.text
             resp = json.loads(resp)
             for i in range(len(resp)):
                 URLs.append(resp[i]["git_pull_url"])
             current_page += 1
-
+        log.debug("AuthenticatedGists is returning URLs with length: {}".format(len(URLs)))
+        for url in URLs:
+            log.debug('AuthenticatedGists URLs contains: {}'.format(url))
         return(URLs)
 
     def fromUser(self, user, username=None, token=None, include_gists=False):
@@ -95,6 +115,7 @@ class getReposURLs(object):
         Output:-
         a list of Github repositories URLs.
         """
+        log.debug("fromUser is beginning")
 
         URLs = []
         resp = []
@@ -103,11 +124,13 @@ class getReposURLs(object):
             API = "https://api.github.com/users/{0}/repos?per_page=40000000&page={1}".format(user, current_page)
 
             if (username or token) is None:
-                resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
+                r = requests.get(API, headers=self.headers, timeout=self.timeout)
+                resp = r.text
             else:
-                resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+                r = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token))
+                resp = r.text
             resp = json.loads(resp)
-            
+
             if self.checkResponse(resp) != 0:
                 return([])
 
@@ -117,6 +140,9 @@ class getReposURLs(object):
             if include_gists is True:
                 URLs.extend(self.UserGists(user, username=username, token=token))
             current_page += 1
+        log.debug('fromUser is returning URLs with length: {}'.format(len(URLs)))
+        for url in URLs:
+            log.debug('fromUser URLs contains: {}'.format(url))
         return(URLs)
 
     def fromOrg(self, org_name, username=None, token=None):
@@ -130,17 +156,26 @@ class getReposURLs(object):
         Output:-
         a list of Github repositories URLs.
         """
+        log.debug("fromOrg is beginning")
 
         URLs = []
         resp = []
         current_page = 1
         while (len(resp) != 0 or current_page == 1):
             API = "https://api.github.com/orgs/{0}/repos?per_page=40000000&page={1}".format(org_name, current_page)
+            log.debug("API is {}".format(API))
+
             if (username or token) is None:
-                resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
+                r = requests.get(API, headers=self.headers, timeout=self.timeout)
+                log.debug("fromOrg response when username or token is None: {}".format(r))
+                resp = r.text
             else:
-                resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+                r = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token))
+                log.debug("fromOrg response when username or token is not None: {}".format(r))
+                resp = r.text
             resp = json.loads(resp)
+            log.debug("resp is: {}".format(resp))
+
 
             if self.checkResponse(resp) != 0:
                 return([])
@@ -148,6 +183,10 @@ class getReposURLs(object):
             for i in range(len(resp)):
                 URLs.append(resp[i]["git_url"])
             current_page += 1
+        log.debug('fromOrg is returning URLs with length: {}'.format(len(URLs)))
+        for url in URLs:
+            log.debug('fromOrg URLs contains: {}'.format(url))
+
         return(URLs)
 
     def fromOrgIncludeUsers(self, org_name, username=None, token=None, include_gists=False):
@@ -162,6 +201,7 @@ class getReposURLs(object):
         Output:-
         a list of Github repositories URLs.
         """
+        log.debug("fromOrg is beginning")
 
         URLs = []
         members = []
@@ -171,10 +211,14 @@ class getReposURLs(object):
 
         while (len(resp) != 0 or current_page == 1):
             API = "https://api.github.com/orgs/{0}/members?per_page=40000000&page={1}".format(org_name, current_page)
+            log.debug("API is {}".format(API))
+
             if (username or token) is None:
-                resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
+                r = requests.get(API, headers=self.headers, timeout=self.timeout)
+                resp = r.text
             else:
-                resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+                r = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token))
+                resp = r.text
             resp = json.loads(resp)
 
             if self.checkResponse(resp) != 0:
@@ -186,10 +230,12 @@ class getReposURLs(object):
 
         for member in members:
             URLs.extend(self.fromUser(member, username=username, token=token, include_gists=include_gists))
-
+        log.debug('fromOrgIncludeUsers is returning URLs with length: {}'.format(len(URLs)))
+        for url in URLs:
+            log.debug('fromOrgIncludeUsers URLs contains: {}'.format(url))
         return(URLs)
 
-    def checkAuthencation(self, username, token):
+    def checkAuthentication(self, username, token):
         """
         Checks whether an authentication credentials are valid or not.
         Input:-
@@ -206,22 +252,29 @@ class getReposURLs(object):
             return(True)
         else:
             return(False)
-    
+
     def checkResponse(self, response):
         """
         Validates whether there an error in the response.
         """
+        log.debug("Response type is: {}".format(type(response)))
+
+        if type(response) is not dict:
+            return 0
+
         try:
             if "API rate limit exceeded" in response["message"]:
                 print('[!] Error: Github API rate limit exceeded')
                 return(1)
-        except TypeError:
+        except TypeError as err:
+            log.debug(err)
             pass
 
         try:
             if (response["message"] == "Not Found"):
                 return(2)  # The organization does not exist
-        except TypeError:
+        except TypeError as err:
+            log.debug(err)
             pass
 
         return(0)
@@ -236,18 +289,25 @@ class getReposURLs(object):
         Output:-
         a list of Github repositories URLs.
         """
+        log.debug("fromAuthenticatedUser is beginning")
+
         URLs = []
         resp = []
         current_page = 1
 
         while (len(resp) != 0 or current_page == 1):
             API = "https://api.github.com/user/repos?per_page=40000000&type=all&page={}".format(current_page)
-            resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
+
+            r = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token))
+            resp = r.text
             resp = json.loads(resp)
 
             for i in range(len(resp)):
                 URLs.append(resp[i]["git_url"])
             current_page += 1
+        log.debug('fromAuthenticatedUser is returning URLs with length: {}'.format(len(URLs)))
+        for url in URLs:
+            log.debug('fromAuthenticatedUser URLs contains: {}'.format(url))
         return(URLs)
 
 
@@ -266,7 +326,8 @@ def cloneRepo(URL, cloningpath, username=None, token=None):
         try:
             if not os.path.exists(cloningpath):
                 os.mkdir(cloningpath)
-        except Exception:
+        except Exception as err:
+            log.debug(err)
             pass
         URL = URL.replace("git://", "https://")
         if (username or token) is not None:
@@ -281,10 +342,14 @@ def cloneRepo(URL, cloningpath, username=None, token=None):
             print(fullpath)
 
         if os.path.exists(fullpath):
+            log.debug('Pulling {}'.format(fullpath))
             git.Repo(fullpath).remote().pull()
         else:
+            log.debug('Cloning {}'.format(fullpath))
             git.Repo.clone_from(URL, fullpath)
-    except Exception:
+
+    except Exception as err:
+        log.debug(err)
         print("Error: There was an error in cloning [{}]".format(URL))
 
 
@@ -305,6 +370,7 @@ def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None
     for URL in URLs:
         Q.put(URL)
         while Q.empty() is False:
+            env = os.environ.copy()
             if (threading.active_count() < (threads_limit + 1)):
                 t = threading.Thread(target=cloneRepo, args=(Q.get(), cloningPath,), kwargs={"username": username, "token": token})
                 t.daemon = True
@@ -313,8 +379,8 @@ def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None
                 time.sleep(0.5)
 
                 threads_state.append(t)
-        for _ in threads_state:
-            _.join()
+        for threads in threads_state:
+            threads.join()
 
 
 def main():
@@ -397,7 +463,7 @@ def main():
             print('[!] Error: Incorrect authentication value, must be: <username>:<password_or_personal_access_token>')
             print('\nExiting...')
             exit(1)
-        if getReposURLs().checkAuthencation(authentication.split(":")[0], authentication.split(":")[1]) is False:
+        if getReposURLs().checkAuthentication(authentication.split(":")[0], authentication.split(":")[1]) is False:
             print("Error: authentication failed.")
             print("\nExiting...")
             exit(1)
@@ -434,6 +500,10 @@ def main():
                 URLs.extend(getReposURLs().fromOrgIncludeUsers(organization, username=username, token=token, include_gists=include_gists))
 
     URLs = list(set(URLs))
+    log.debug('URLs length is {}'.format(len(URLs)))
+    for url in URLs:
+        log.debug('URLs contains: {}'.format(url))
+
 
     cloneBulkRepos(URLs, output_path, threads_limit=threads_limit, username=username, token=token)
 
@@ -445,5 +515,3 @@ if (__name__ == "__main__"):
             print('\nKeyboardInterrupt Detected.')
             print('\nExiting...')
             exit(0)
-
-# *** END *** #
