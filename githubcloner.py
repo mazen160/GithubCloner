@@ -338,8 +338,7 @@ def main():
     parser.add_argument("-o", "--output-path",
                         dest="output_path",
                         help="The directory to use in cloning Git repositories.",
-                        action='store',
-                        required=True)
+                        action='store')
     parser.add_argument("-t", "--threads",
                         dest="threads_limit",
                         help="Threads used in cloning repositories (Default: 5).",
@@ -358,6 +357,10 @@ def main():
                         dest="include_gists",
                         help="Include gists.",
                         action='store_true')
+    parser.add_argument("--echo-urls",
+                        dest="echo_urls",
+                        help="Print gathered URLs only and then exit.",
+                        action='store_true')
     args = parser.parse_args()
 
     users = args.users if args.users else None
@@ -368,13 +371,14 @@ def main():
     authentication = args.authentication if args.authentication else None
     include_authenticated_repos = args.include_authenticated_repos if args.include_authenticated_repos else False
     include_gists = args.include_gists if args.include_gists else False
+    echo_urls = args.echo_urls if args.echo_urls else False
 
     if threads_limit > 10:
         print("Error: Using more than 10 threads may cause errors.\nDecrease the amount of used threads.")
         print("\nExiting....")
         exit(1)
 
-    if not args.output_path:
+    if (not args.output_path) and (not echo_urls):
         print("Error: The output path is not specified.")
         print("\nExiting...")
         exit(1)
@@ -389,8 +393,9 @@ def main():
         print("\nExiting...")
         exit(1)
 
-    if not os.path.exists(output_path):
-        os.mkdir(output_path)
+    if not echo_urls:
+        if not os.path.exists(output_path):
+            os.mkdir(output_path)
 
     if authentication is not None:
         if ':' not in authentication:
@@ -435,6 +440,10 @@ def main():
                 URLs.extend(getReposURLs().fromOrgIncludeUsers(organization, username=username, token=token, include_gists=include_gists))
 
     URLs = list(set(URLs))
+    if echo_urls is True:
+        for _ in URLs:
+            print(_)
+        return
 
     cloneBulkRepos(URLs, output_path, threads_limit=threads_limit, username=username, token=token)
 
