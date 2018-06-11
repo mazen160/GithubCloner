@@ -189,7 +189,7 @@ class getReposURLs(object):
 
         return(URLs)
 
-    def checkAuthencation(self, username, token):
+    def checkAuthentication(self, username, token):
         """
         Checks whether an authentication credentials are valid or not.
         Input:-
@@ -397,7 +397,7 @@ def main():
             print('[!] Error: Incorrect authentication value, must be: <username>:<password_or_personal_access_token>')
             print('\nExiting...')
             exit(1)
-        if getReposURLs().checkAuthencation(authentication.split(":")[0], authentication.split(":")[1]) is False:
+        if getReposURLs().checkAuthentication(authentication.split(":")[0], authentication.split(":")[1]) is False:
             print("Error: authentication failed.")
             print("\nExiting...")
             exit(1)
