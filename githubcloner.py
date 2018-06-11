@@ -304,17 +304,17 @@ def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None
     threads_state = []
     for URL in URLs:
         Q.put(URL)
-        while Q.empty() is False:
-            if (threading.active_count() < (threads_limit + 1)):
-                t = threading.Thread(target=cloneRepo, args=(Q.get(), cloningPath,), kwargs={"username": username, "token": token})
-                t.daemon = True
-                t.start()
-            else:
-                time.sleep(0.5)
+    while Q.empty() is False:
+        if (threading.active_count() < (threads_limit + 1)):
+            t = threading.Thread(target=cloneRepo, args=(Q.get(), cloningPath,), kwargs={"username": username, "token": token})
+            t.daemon = True
+            t.start()
+        else:
+            time.sleep(0.5)
 
-                threads_state.append(t)
-        for _ in threads_state:
-            _.join()
+            threads_state.append(t)
+    for _ in threads_state:
+        _.join()
 
 
 def main():
