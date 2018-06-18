@@ -18,7 +18,10 @@ import argparse
 import git
 import json
 import os
-import queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import requests
 import threading
 import time
