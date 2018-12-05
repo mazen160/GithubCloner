@@ -254,7 +254,7 @@ class getReposURLs(object):
         return(URLs)
 
 
-def cloneRepo(URL, cloningpath, username=None, token=None):
+def cloneRepo(URL, cloningpath, username=None, token=None, no_prefix=False):
     """
     Clones a single GIT repository.
     Input:-
@@ -274,7 +274,10 @@ def cloneRepo(URL, cloningpath, username=None, token=None):
         URL = URL.replace("git://", "https://")
         if (username or token) is not None:
             URL = URL.replace("https://", "https://{}:{}@".format(username, token))
-        repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
+        if no_prefix:
+            repopath = URL.split("/")[-1]
+        else:
+            repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
         if repopath.endswith(".git"):
             repopath = repopath[:-4]
         if '@' in repopath:
@@ -291,7 +294,7 @@ def cloneRepo(URL, cloningpath, username=None, token=None):
         print("Error: There was an error in cloning [{}]".format(URL))
 
 
-def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None):
+def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None, no_prefix=False):
     """
     Clones a bulk of GIT repositories.
     Input:-
@@ -309,7 +312,7 @@ def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None
         Q.put(URL)
     while Q.empty() is False:
         if (threading.active_count() < (threads_limit + 1)):
-            t = threading.Thread(target=cloneRepo, args=(Q.get(), cloningPath,), kwargs={"username": username, "token": token})
+            t = threading.Thread(target=cloneRepo, args=(Q.get(), cloningPath,), kwargs={"username": username, "token": token, 'no_prefix': no_prefix})
             t.daemon = True
             t.start()
         else:
@@ -364,6 +367,10 @@ def main():
                         dest="echo_urls",
                         help="Print gathered URLs only and then exit.",
                         action='store_true')
+    parser.add_argument("--no-prefix",
+                        dest="no_prefix",
+                        help="Removes the organization name prefix from repo directory. Example: /Netflix_repo-name --> /repo-name",
+                        action='store_true')
     args = parser.parse_args()
 
     users = args.users if args.users else None
@@ -375,6 +382,7 @@ def main():
     include_authenticated_repos = args.include_authenticated_repos if args.include_authenticated_repos else False
     include_gists = args.include_gists if args.include_gists else False
     echo_urls = args.echo_urls if args.echo_urls else False
+    no_prefix = args.no_prefix if args.no_prefix else False
 
     if threads_limit > 10:
         print("Error: Using more than 10 threads may cause errors.\nDecrease the amount of used threads.")
@@ -448,7 +456,7 @@ def main():
             print(_)
         return
 
-    cloneBulkRepos(URLs, output_path, threads_limit=threads_limit, username=username, token=token)
+    cloneBulkRepos(URLs, output_path, threads_limit=threads_limit, username=username, token=token, no_prefix=no_prefix)
 
 
 if (__name__ == "__main__"):
