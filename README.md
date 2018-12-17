@@ -18,7 +18,7 @@ GithubCloner
 | Use Github authentication in the task.                    | `./githubcloner.py --org organization -o /tmp/output --authentication user:token`|
 | Clone authenticated repositories that the authenticated user has access to. | `./githubcloner.py -o /tmp/output --authentication user:token --include-authenticated-repos`|
 | Include gists.                                            | `./githubcloner.py --user user -o /tmp/output --include-gists`              |
-| Remove the organization name prefix from repo directory. (eg.. /Netflix_repo-name --> /repo-name)                   | `./githubcloner.py --user user -o /tmp/output --no-prefex`                   |
+| Remove the organization name prefix from repo directory. (eg.. /Netflix_repo-name --> /repo-name)                   | `./githubcloner.py --user user -o /tmp/output --no-prefix`                   |
 | Print gathered URLs only and then exit.                   | `./githubcloner.py --user user --include-gists --echo-urls`                 |
 
 
