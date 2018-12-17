@@ -254,6 +254,17 @@ class getReposURLs(object):
         return(URLs)
 
 
+def parseGitURL(URL, username=None, token=None):
+    """
+    This function parses the GIT URL.
+    """
+
+    URL = URL.replace("git://", "https://")
+    if (username or token) is not None:
+        URL = URL.replace("https://", "https://{}:{}@".format(username, token))
+    return(URL)
+
+
 def cloneRepo(URL, cloningpath, username=None, token=None):
     """
     Clones a single GIT repository.
@@ -271,14 +282,14 @@ def cloneRepo(URL, cloningpath, username=None, token=None):
                 os.mkdir(cloningpath)
         except Exception:
             pass
-        URL = URL.replace("git://", "https://")
-        if (username or token) is not None:
-            URL = URL.replace("https://", "https://{}:{}@".format(username, token))
+        URL = parseGitURL(URL, username=username, token=token)
+
         repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
         if repopath.endswith(".git"):
             repopath = repopath[:-4]
         if '@' in repopath:
             repopath = repopath.replace(repopath[:repopath.index("@") + 1], "")
+
         fullpath = cloningpath + "/" + repopath
         with threading.Lock():
             print(fullpath)
@@ -444,8 +455,8 @@ def main():
 
     URLs = list(set(URLs))
     if echo_urls is True:
-        for _ in URLs:
-            print(_)
+        for URL in URLs:
+            print(parseGitURL(URL, username=username, token=token))
         return
 
     cloneBulkRepos(URLs, output_path, threads_limit=threads_limit, username=username, token=token)
