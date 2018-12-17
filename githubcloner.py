@@ -254,7 +254,6 @@ class getReposURLs(object):
         return(URLs)
 
 
-<<<<<<< HEAD
 def parseGitURL(URL, username=None, token=None):
     """
     This function parses the GIT URL.
@@ -266,10 +265,7 @@ def parseGitURL(URL, username=None, token=None):
     return(URL)
 
 
-def cloneRepo(URL, cloningpath, username=None, token=None):
-=======
 def cloneRepo(URL, cloningpath, username=None, token=None, no_prefix=False):
->>>>>>> 54f9a2526dc9a2a0b4b4ea1aa43116b419b5945e
     """
     Clones a single GIT repository.
     Input:-
@@ -286,11 +282,9 @@ def cloneRepo(URL, cloningpath, username=None, token=None, no_prefix=False):
                 os.mkdir(cloningpath)
         except Exception:
             pass
-<<<<<<< HEAD
         URL = parseGitURL(URL, username=username, token=token)
 
         repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
-=======
         URL = URL.replace("git://", "https://")
         if (username or token) is not None:
             URL = URL.replace("https://", "https://{}:{}@".format(username, token))
@@ -298,7 +292,7 @@ def cloneRepo(URL, cloningpath, username=None, token=None, no_prefix=False):
             repopath = URL.split("/")[-1]
         else:
             repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
->>>>>>> 54f9a2526dc9a2a0b4b4ea1aa43116b419b5945e
+
         if repopath.endswith(".git"):
             repopath = repopath[:-4]
         if '@' in repopath:
