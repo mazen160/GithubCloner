@@ -286,8 +286,6 @@ def cloneRepo(URL, cloningpath, username=None, token=None, no_prefix=False):
 
         repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
         URL = URL.replace("git://", "https://")
-        if (username or token) is not None:
-            URL = URL.replace("https://", "https://{}:{}@".format(username, token))
         if no_prefix:
             repopath = URL.split("/")[-1]
         else:
