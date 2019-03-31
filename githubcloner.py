@@ -301,11 +301,7 @@ def cloneRepo(URL, cloningpath, username=None, token=None, prefix_mode="undersco
         URL = parseGitURL(URL, username=username, token=token)
 
         URL = URL.replace("git://", "https://")
-        if (username or token) is not None:
-            URL = URL.replace("https://", "https://{}:{}@".format(username, token))
-        username = URL.split("/")[-2]
-        reponame = URL.split("/")[-1]
-        repopath = get_repopath(username=username, reponame=reponame, prefix_mode=prefix_mode)
+
 
         if repopath.endswith(".git"):
             repopath = repopath[:-4]
