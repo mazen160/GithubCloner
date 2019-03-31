@@ -266,18 +266,16 @@ def parseGitURL(URL, username=None, token=None):
     return(URL)
 
 
-def get_repopath(username, reponame, prefix_mode):
+def get_repopath(repo_username, repo_name, prefix_mode):
     """
     Returns a string of the repo path.
     """
     if prefix_mode == "none":
-        repopath = reponame
+        repopath = repo_name
     elif prefix_mode == "underscore":
-        repopath = username + "_" + reponame
+        repopath = repo_username + "_" + repo_name
     elif prefix_mode == "directory":
-        repopath = username + "/" + reponame
-    else:
-        raise ValueError("prefix_mode must be one of: \"none\", \"underscore\", \"directory\".")
+        repopath = repo_username + "/" + repo_name
     return repopath
 
 
@@ -296,15 +294,24 @@ def cloneRepo(URL, cloningpath, username=None, token=None, prefix_mode="undersco
         try:
             if not os.path.exists(cloningpath):
                 os.mkdir(cloningpath)
+            if prefix_mode == "directory":
+                repo_username = URL.split("/")[-2]
+                if not os.path.exists(cloningpath + "/" + repo_username):
+                    os.mkdir(cloningpath + "/" + repo_username)
         except Exception:
-            pass
+            print("Error: There is an error in creating directories")
+
         URL = parseGitURL(URL, username=username, token=token)
 
-        URL = URL.replace("git://", "https://")
 
+        repo_username = URL.split("/")[-2]
+        repo_name = URL.split("/")[-1]
+
+        repopath = get_repopath(repo_username, repo_name, prefix_mode)
 
         if repopath.endswith(".git"):
             repopath = repopath[:-4]
+
         if '@' in repopath:
             repopath = repopath.replace(repopath[:repopath.index("@") + 1], "")
 
@@ -316,7 +323,8 @@ def cloneRepo(URL, cloningpath, username=None, token=None, prefix_mode="undersco
             git.Repo(fullpath).remote().pull()
         else:
             git.Repo.clone_from(URL, fullpath)
-    except Exception:
+    except Exception as e:
+        print(e)
         print("Error: There was an error in cloning [{}]".format(URL))
 
 
@@ -393,7 +401,7 @@ def main():
                         dest="echo_urls",
                         help="Print gathered URLs only and then exit.",
                         action='store_true')
-    parser.add_argument("--prefix_mode",
+    parser.add_argument("--prefix-mode",
                         dest="prefix_mode",
                         help="Sets the prefix mode for the repo directory. underscore: /Netflix_repo-name, directory: /Netflix/repo-name, none: /repo-name",
                         action='store',
@@ -432,8 +440,13 @@ def main():
         exit(1)
 
     if not echo_urls:
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
+        try:
+            if not os.path.exists(output_path):
+                os.mkdir(output_path)
+        except Exception as e:
+            print("Error: There is an error creating output directory.")
+            print(e)
+            exit(1)
 
     if authentication is not None:
         if ':' not in authentication:
@@ -453,6 +466,11 @@ def main():
 
     if (include_authenticated_repos is True) and (authentication is None):
         print("Error: --include-authenticated-repos is used and --authentication is not provided.")
+        print("\nExiting...")
+        exit(1)
+
+    if prefix_mode not in ["none", "underscore", "directory"]:
+        print("Error: prefix_mode must be one of: \"none\", \"underscore\", \"directory\".")
         print("\nExiting...")
         exit(1)
 
