@@ -14,17 +14,18 @@
 # *******************************************************************
 
 # Modules
-import argparse
-import git
 import json
 import os
 try:
     import queue
 except ImportError:
     import Queue as queue
-import requests
 import threading
 import time
+
+import argparse
+import git
+import requests
 
 
 class getReposURLs(object):
@@ -265,7 +266,22 @@ def parseGitURL(URL, username=None, token=None):
     return(URL)
 
 
-def cloneRepo(URL, cloningpath, username=None, token=None, no_prefix=False):
+def get_repopath(username, reponame, prefix_mode):
+    """
+    Returns a string of the repo path.
+    """
+    if prefix_mode == "none":
+        repopath = reponame
+    elif prefix_mode == "underscore":
+        repopath = username + "_" + reponame
+    elif prefix_mode == "directory":
+        repopath = username + "/" + reponame
+    else:
+        raise ValueError("prefix_mode must be one of: \"none\", \"underscore\", \"directory\".")
+    return repopath
+
+
+def cloneRepo(URL, cloningpath, username=None, token=None, prefix_mode="underscore"):
     """
     Clones a single GIT repository.
     Input:-
@@ -284,12 +300,8 @@ def cloneRepo(URL, cloningpath, username=None, token=None, no_prefix=False):
             pass
         URL = parseGitURL(URL, username=username, token=token)
 
-        repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
         URL = URL.replace("git://", "https://")
-        if no_prefix:
-            repopath = URL.split("/")[-1]
-        else:
-            repopath = URL.split("/")[-2] + "_" + URL.split("/")[-1]
+
 
         if repopath.endswith(".git"):
             repopath = repopath[:-4]
@@ -308,7 +320,7 @@ def cloneRepo(URL, cloningpath, username=None, token=None, no_prefix=False):
         print("Error: There was an error in cloning [{}]".format(URL))
 
 
-def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None, no_prefix=False):
+def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None, prefix_mode="underscore"):
     """
     Clones a bulk of GIT repositories.
     Input:-
@@ -326,7 +338,7 @@ def cloneBulkRepos(URLs, cloningPath, threads_limit=5, username=None, token=None
         Q.put(URL)
     while Q.empty() is False:
         if (threading.active_count() < (threads_limit + 1)):
-            t = threading.Thread(target=cloneRepo, args=(Q.get(), cloningPath,), kwargs={"username": username, "token": token, 'no_prefix': no_prefix})
+            t = threading.Thread(target=cloneRepo, args=(Q.get(), cloningPath,), kwargs={"username": username, "token": token, 'prefix_mode': prefix_mode})
             t.daemon = True
             t.start()
         else:
@@ -381,10 +393,11 @@ def main():
                         dest="echo_urls",
                         help="Print gathered URLs only and then exit.",
                         action='store_true')
-    parser.add_argument("--no-prefix",
-                        dest="no_prefix",
-                        help="Removes the organization name prefix from repo directory. Example: /Netflix_repo-name --> /repo-name",
-                        action='store_true')
+    parser.add_argument("--prefix_mode",
+                        dest="prefix_mode",
+                        help="Sets the prefix mode for the repo directory. underscore: /Netflix_repo-name, directory: /Netflix/repo-name, none: /repo-name",
+                        action='store',
+                        default="underscore")
     args = parser.parse_args()
 
     users = args.users if args.users else None
@@ -396,7 +409,7 @@ def main():
     include_authenticated_repos = args.include_authenticated_repos if args.include_authenticated_repos else False
     include_gists = args.include_gists if args.include_gists else False
     echo_urls = args.echo_urls if args.echo_urls else False
-    no_prefix = args.no_prefix if args.no_prefix else False
+    prefix_mode = args.prefix_mode
 
     if threads_limit > 10:
         print("Error: Using more than 10 threads may cause errors.\nDecrease the amount of used threads.")
@@ -470,7 +483,7 @@ def main():
             print(parseGitURL(URL, username=username, token=token))
         return
 
-    cloneBulkRepos(URLs, output_path, threads_limit=threads_limit, username=username, token=token, no_prefix=no_prefix)
+    cloneBulkRepos(URLs, output_path, threads_limit=threads_limit, username=username, token=token, prefix_mode=prefix_mode)
 
 
 if (__name__ == "__main__"):
