@@ -13,6 +13,7 @@ GithubCloner
 | Clone all repositories of multiple users.                 | `./githubcloner.py --user user1,user2,user3 -o /tmp/output`                 |
 | Clone all repositories of a single organization.          | `./githubcloner.py --org organization -o /tmp/output`                       |
 | Clone all repositories of multiple organizations.         | `./githubcloner.py --org organization1,organization2 -o /tmp/output`        |
+| Clone all repositories of an organization in a hosted Github       | `./githubcloner.py --org organization -o /tmp/output` --api-prefix https://git.company.com/api/v3       |
 | Modify the amount of used threads                         | `./githubcloner.py --user user --threads 10 -o /tmp/output`                 |
 | Clone all repositories of an organization, along with all repositories of the organization's members.       | `./githubcloner.py --org organization --include-org-members -o /tmp/output` |
 | Use Github authentication in the task.                    | `./githubcloner.py --org organization -o /tmp/output --authentication user:token`|

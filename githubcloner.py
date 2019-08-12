@@ -29,10 +29,11 @@ import requests
 
 
 class getReposURLs(object):
-    def __init__(self):
+    def __init__(self, api_prefix):
         self.user_agent = "GithubCloner (https://github.com/mazen160/GithubCloner)"
         self.headers = {'User-Agent': self.user_agent, 'Accept': '*/*'}
         self.timeout = 3
+        self.api_prefix = api_prefix
 
     def UserGists(self, user, username=None, token=None):
         """
@@ -50,7 +51,7 @@ class getReposURLs(object):
         resp = []
         current_page = 1
         while (len(resp) != 0 or current_page == 1):
-            API = "https://api.github.com/users/{0}/gists?page={1}".format(user, current_page)
+            API = "{0}/users/{1}/gists?page={2}".format(self.api_prefix, user, current_page)
             if (username or token) is None:
                 resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
             else:
@@ -79,7 +80,7 @@ class getReposURLs(object):
         resp = []
         current_page = 1
         while (len(resp) != 0 or current_page == 1):
-            API = "https://api.github.com/gists?page={0}".format(current_page)
+            API = "{0}/gists?page={1}".format(self.api_prefix, current_page)
             resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
             resp = json.loads(resp)
             for i in range(len(resp)):
@@ -104,7 +105,7 @@ class getReposURLs(object):
         resp = []
         current_page = 1
         while (len(resp) != 0 or current_page == 1):
-            API = "https://api.github.com/users/{0}/repos?per_page=40000000&page={1}".format(user, current_page)
+            API = "{0}/users/{1}/repos?per_page=40000000&page={2}".format(self.api_prefix, user, current_page)
 
             if (username or token) is None:
                 resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
@@ -139,7 +140,7 @@ class getReposURLs(object):
         resp = []
         current_page = 1
         while (len(resp) != 0 or current_page == 1):
-            API = "https://api.github.com/orgs/{0}/repos?per_page=40000000&page={1}".format(org_name, current_page)
+            API = "{0}/orgs/{1}/repos?per_page=40000000&page={2}".format(self.api_prefix, org_name, current_page)
             if (username or token) is None:
                 resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
             else:
@@ -174,7 +175,7 @@ class getReposURLs(object):
         URLs.extend(self.fromOrg(org_name, username=username, token=token))
 
         while (len(resp) != 0 or current_page == 1):
-            API = "https://api.github.com/orgs/{0}/members?per_page=40000000&page={1}".format(org_name, current_page)
+            API = "{0}/orgs/{1}/members?per_page=40000000&page={2}".format(self.api_prefix, org_name, current_page)
             if (username or token) is None:
                 resp = requests.get(API, headers=self.headers, timeout=self.timeout).text
             else:
@@ -204,7 +205,7 @@ class getReposURLs(object):
         False: if the authentication credentials are invalid.
         """
 
-        API = "https://api.github.com/user"
+        API = "{0}/user".format(self.api_prefix)
         resp = requests.get(API, auth=(username, token), timeout=self.timeout, headers=self.headers)
         if resp.status_code == 200:
             return(True)
@@ -245,7 +246,7 @@ class getReposURLs(object):
         current_page = 1
 
         while (len(resp) != 0 or current_page == 1):
-            API = "https://api.github.com/user/repos?per_page=40000000&type=all&page={}".format(current_page)
+            API = "{0}/user/repos?per_page=40000000&type=all&page={}".format(self.api_prefix, current_page)
             resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
             resp = json.loads(resp)
 
@@ -406,6 +407,11 @@ def main():
                         help="Sets the prefix mode for the repo directory. underscore: /Netflix_repo-name, directory: /Netflix/repo-name, none: /repo-name",
                         action='store',
                         default="underscore")
+    parser.add_argument("--api-prefix",
+                        dest="api_prefix",
+                        help="Github Enterprise domain to prefix to API calls",
+                        action='store',
+                        default="https://api.github.com")
     args = parser.parse_args()
 
     users = args.users if args.users else None
@@ -418,6 +424,7 @@ def main():
     include_gists = args.include_gists if args.include_gists else False
     echo_urls = args.echo_urls if args.echo_urls else False
     prefix_mode = args.prefix_mode
+    api_prefix = args.api_prefix
 
     if threads_limit > 10:
         print("Error: Using more than 10 threads may cause errors.\nDecrease the amount of used threads.")
@@ -453,7 +460,7 @@ def main():
             print('[!] Error: Incorrect authentication value, must be: <username>:<password_or_personal_access_token>')
             print('\nExiting...')
             exit(1)
-        if getReposURLs().checkAuthentication(authentication.split(":")[0], authentication.split(":")[1]) is False:
+        if getReposURLs(api_prefix).checkAuthentication(authentication.split(":")[0], authentication.split(":")[1]) is False:
             print("Error: authentication failed.")
             print("\nExiting...")
             exit(1)
@@ -477,23 +484,23 @@ def main():
     URLs = []
 
     if include_authenticated_repos is True:
-        URLs.extend(getReposURLs().fromAuthenticatedUser(username, token))
+        URLs.extend(getReposURLs(api_prefix).fromAuthenticatedUser(username, token))
         if include_gists is True:
-            URLs.extend(getReposURLs().AuthenticatedGists(username, token))
+            URLs.extend(getReposURLs(api_prefix).AuthenticatedGists(username, token))
 
     if users is not None:
         users = users.replace(" ", "").split(",")
         for user in users:
-            URLs.extend(getReposURLs().fromUser(user, username=username, token=token, include_gists=include_gists))
+            URLs.extend(getReposURLs(api_prefix).fromUser(user, username=username, token=token, include_gists=include_gists))
 
     if organizations is not None:
         organizations = organizations.replace(" ", "").split(",")
 
         for organization in organizations:
             if include_organization_members is False:
-                URLs.extend(getReposURLs().fromOrg(organization, username=username, token=token))
+                URLs.extend(getReposURLs(api_prefix).fromOrg(organization, username=username, token=token))
             else:
-                URLs.extend(getReposURLs().fromOrgIncludeUsers(organization, username=username, token=token, include_gists=include_gists))
+                URLs.extend(getReposURLs(api_prefix).fromOrgIncludeUsers(organization, username=username, token=token, include_gists=include_gists))
 
     URLs = list(set(URLs))
     if echo_urls is True:
