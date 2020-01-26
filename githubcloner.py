@@ -263,7 +263,7 @@ def parseGitURL(URL, username=None, token=None):
 
     URL = URL.replace("git://", "https://")
     if (username or token) is not None:
-        URL = URL.replace("https://", "https://{1}:{2}@".format(username, token))
+        URL = URL.replace("https://", "https://{0}:{1}@".format(username, token))
     return(URL)
 
 
