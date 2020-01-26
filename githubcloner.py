@@ -246,7 +246,7 @@ class getReposURLs(object):
         current_page = 1
 
         while (len(resp) != 0 or current_page == 1):
-            API = "{0}/user/repos?per_page=40000000&type=all&page={}".format(self.api_prefix, current_page)
+            API = "{0}/user/repos?per_page=40000000&type=all&page={1}".format(self.api_prefix, current_page)
             resp = requests.get(API, headers=self.headers, timeout=self.timeout, auth=(username, token)).text
             resp = json.loads(resp)
 
@@ -263,7 +263,7 @@ def parseGitURL(URL, username=None, token=None):
 
     URL = URL.replace("git://", "https://")
     if (username or token) is not None:
-        URL = URL.replace("https://", "https://{}:{}@".format(username, token))
+        URL = URL.replace("https://", "https://{1}:{2}@".format(username, token))
     return(URL)
 
 
