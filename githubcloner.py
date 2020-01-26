@@ -32,7 +32,7 @@ class getReposURLs(object):
     def __init__(self, api_prefix):
         self.user_agent = "GithubCloner (https://github.com/mazen160/GithubCloner)"
         self.headers = {'User-Agent': self.user_agent, 'Accept': '*/*'}
-        self.timeout = 3
+        self.timeout = 30
         self.api_prefix = api_prefix
 
     def UserGists(self, user, username=None, token=None):
