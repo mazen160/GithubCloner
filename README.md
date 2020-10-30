@@ -22,6 +22,7 @@ GithubCloner
 | Save repos as username_reponame                           | `./githubcloner.py --user user -o /tmp/output --prefix-mode underscore`     |
 | Save repos as username/reponame                           | `./githubcloner.py --user user -o /tmp/output --prefix-mode directory`      |
 | Save repos as reponame                                    | `./githubcloner.py --user user -o /tmp/output --prefix-mode none`           |
+| Exclude comma separated list of repos                     | `./githubcloner.py --user user -- exclude_repos repo1,repo2,repo3,...`      |
 | Print gathered URLs only and then exit.                   | `./githubcloner.py --user user --include-gists --echo-urls`                 |
 
 
@@ -52,3 +53,8 @@ This project is made for educational and ethical testing purposes only. It is th
 * Email: *mazin AT mazinahmed DOT net*
 * Twitter: [https://twitter.com/mazen160](https://twitter.com/mazen160)
 * Linkedin: [http://linkedin.com/in/infosecmazinahmed](http://linkedin.com/in/infosecmazinahmed)
+
+# Update from qkzk
+
+* option to exclude a bunch of repos
+* refactor
