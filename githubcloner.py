@@ -46,9 +46,11 @@ class getReposURLs:
         return not any((excluded_repo in url
                         for excluded_repo in self.excluded_repos_list))
 
-    def append_response(self, URLs, resp, key):
+    def append_response(self, URLs, resp, key, exclude_forks=False):
         '''Append the urls from response from a given criteria'''
         for i, _ in enumerate(resp):
+            if exclude_forks and resp[i]['fork']:
+                continue
             resp_i_key = resp[i][key]
             if self.filter_excluded_repos(resp_i_key):
                 URLs.append(resp_i_key)
@@ -113,7 +115,7 @@ class getReposURLs:
 
         return URLs
 
-    def fromUser(self, user, username=None, token=None, include_gists=False):
+    def fromUser(self, user, username=None, token=None, include_gists=False, exclude_forked=False):
         """
         Retrieves a list of repositories for a Github user.
         Input:-
@@ -146,7 +148,7 @@ class getReposURLs:
             if self.checkResponse(resp) != 0:
                 return []
 
-            self.append_response(URLs, resp, "git_url")
+            self.append_response(URLs, resp, "git_url", exclude_forked)
 
             if include_gists is True:
                 URLs.extend(self.UserGists(
@@ -154,7 +156,7 @@ class getReposURLs:
             current_page += 1
         return URLs
 
-    def fromOrg(self, org_name, username=None, token=None):
+    def fromOrg(self, org_name, username=None, token=None, exclude_forked=False):
         """
         Retrieves a list of repositories for a Github organization.
         Input:-
@@ -186,7 +188,7 @@ class getReposURLs:
             if self.checkResponse(resp) != 0:
                 return []
 
-            self.append_response(URLs, resp, "git_url")
+            self.append_response(URLs, resp, "git_url", exclude_forked)
             current_page += 1
         return URLs
 
@@ -194,7 +196,8 @@ class getReposURLs:
                             org_name,
                             username=None,
                             token=None,
-                            include_gists=False):
+                            include_gists=False,
+                            exclude_forked=False):
         """
         Retrieves a list of repositories for a Github organization
         and repositories of the Github organization's members.
@@ -279,7 +282,7 @@ class getReposURLs:
 
         return 0
 
-    def fromAuthenticatedUser(self, username, token):
+    def fromAuthenticatedUser(self, username, token, exclude_forked):
         """
         Retrieves a list of Github repositories than an authenticated user
         has access to.
@@ -302,7 +305,7 @@ class getReposURLs:
                                 auth=(username, token)).text
             resp = json.loads(resp)
 
-            self.append_response(URLs, resp, "git_url")
+            self.append_response(URLs, resp, "git_url", exclude_forked)
             current_page += 1
         return URLs
 
@@ -482,6 +485,10 @@ def main():
                         dest="exclude_repos",
                         help="Exclude a list of comma separated repos: 'repo1,repo2,...'",
                         action="store")
+    parser.add_argument("--exclude_forked",
+                        dest="exclude_forked",
+                        help="Exclude forked repositories",
+                        action='store_true')
     args = parser.parse_args()
 
     users = args.users if args.users else None
@@ -563,7 +570,7 @@ def main():
 
     if include_authenticated_repos is True:
         URLs.extend(getReposURLs(
-            api_prefix, exclude_repos).fromAuthenticatedUser(username, token))
+            api_prefix, exclude_repos).fromAuthenticatedUser(username, token, args.exclude_forked))
         if include_gists is True:
             URLs.extend(getReposURLs(
                 api_prefix, exclude_repos).AuthenticatedGists(username, token))
@@ -575,7 +582,8 @@ def main():
                 user,
                 username=username,
                 token=token,
-                include_gists=include_gists))
+                include_gists=include_gists,
+                exclude_forked=args.exclude_forked))
 
     if organizations is not None:
         organizations = organizations.replace(" ", "").split(",")
@@ -585,14 +593,16 @@ def main():
                 URLs.extend(getReposURLs(api_prefix, exclude_repos).fromOrg(
                     organization,
                     username=username,
-                    token=token))
+                    token=token,
+                    exclude_forked=args.exclude_forked))
             else:
                 URLs.extend(getReposURLs(api_prefix,
                                          exclude_repos).fromOrgIncludeUsers(
                     organization,
                     username=username,
                     token=token,
-                    include_gists=include_gists))
+                    include_gists=include_gists,
+                    exclude_forked=args.exclude_forked))
 
     URLs = list(set(URLs))
     if echo_urls is True:
