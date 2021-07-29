@@ -46,10 +46,10 @@ class getReposURLs:
         return not any((excluded_repo in url
                         for excluded_repo in self.excluded_repos_list))
 
-    def append_response(self, URLs, resp, key, exclude_forks=False):
+    def append_response(self, URLs, resp, key, exclude_forked=False):
         '''Append the urls from response from a given criteria'''
         for i, _ in enumerate(resp):
-            if exclude_forks and resp[i]['fork']:
+            if exclude_forked and resp[i]['fork']:
                 continue
             resp_i_key = resp[i][key]
             if self.filter_excluded_repos(resp_i_key):
