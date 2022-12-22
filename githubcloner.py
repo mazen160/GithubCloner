@@ -214,7 +214,7 @@ class getReposURLs:
         members = []
         resp = []
         current_page = 1
-        URLs.extend(self.fromOrg(org_name, username=username, token=token))
+        URLs.extend(self.fromOrg(org_name, username=username, token=token, exclude_forked=exclude_forked))
 
         while (len(resp) != 0 or current_page == 1):
             API = "{0}/orgs/{1}/members?per_page=40000000&page={2}".format(
@@ -241,7 +241,8 @@ class getReposURLs:
             URLs.extend(self.fromUser(member,
                                       username=username,
                                       token=token,
-                                      include_gists=include_gists))
+                                      include_gists=include_gists,
+                                      exclude_forked=exclude_forked))
 
         return URLs
 
@@ -567,7 +568,6 @@ def main():
         exit(1)
 
     URLs = []
-
     if include_authenticated_repos is True:
         URLs.extend(getReposURLs(
             api_prefix, exclude_repos).fromAuthenticatedUser(username, token, args.exclude_forked))
